@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <title>{label_webpage_title}</title>
+  <style type="text/css">
+    body {
+      font-family: sans-serif;
+      font-weight: normal;
+      font-size: 9pt;
+    }
+    td {
+      font-family: sans-serif;
+      font-weight: normal;
+      font-size: 9pt;
+      background-color: #fff;
+      border-style: solid;
+      border-width: 1px;
+      border-color: #000000;
+    }
+    
+    .tdnoborder{
+    	 border-style: none;
+    }
+
+    .borderdiv {
+      width: 524pt;
+      height: 668pt;
+      padding: 0;
+      /*border-style: solid;
+      border-width: 1px;
+      border-color: #000000;*/
+    }
+    .paddingdiv {
+      padding: 10pt;
+    }
+    .bigtable{
+      padding: 0px;
+      border-spacing: 0;
+      border-collapse: collapse;
+    }
+    .bigtable, .linetable {
+      width: 504pt;
+    }
+    .linetable {
+      margin: 11pt 0 0 0;
+      padding: 0px;
+      border-spacing: 0;
+      border-collapse: collapse;
+      border-style: solid;
+      border-width: 1px;
+      border-color: #000000;
+    }
+    .mainhead {
+      font-weight: bold;
+      font-size: 14pt;
+      text-align: center;
+    }
+    
+     .sectionhead {
+      font-weight: bold;
+      font-size: 10pt;
+      text-align: center;
+    }
+    .subhead {
+      font-weight: bold;
+      font-size: 8pt;
+    }
+    .under {
+      border-style: solid;
+      border-width: 0 0 1px 0;
+      border-color: #999999;
+    }
+    .ftitletable {
+      width: 100%;
+      margin: 0 0 0 0;
+    }
+    .ftitlecell1 {
+      vertical-align: top;
+      text-align: left;
+      font-size: 14pt;
+      font-weight: bold;
+    }
+    .ftitlecell2 {
+      vertical-align: top;
+      text-align: right;
+      font-size: 9pt;
+      padding-right: 10pt;
+    }
+    hr {
+      border: 0;
+      height: 6pt;
+      color: #999999;
+      background-color: #999999;
+      margin: 12pt 0 12pt 0;
+    }
+    .tdLabelContainer {
+      text-align: right;
+      width: 10%;
+      vertical-align: top;
+      white-space: nowrap;
+    }
+    .mainhead {
+      vertical-align: top;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- The double div resolves a difference between Firefox and IE in treatment of padding. -->
+<div class='borderdiv'><div class='paddingdiv'>
+
+ <table class='linetable'>
+  <tr>
+   <td class='mainhead' colspan='2'>
+    {header1}
+   </td>
+  </tr>
+ <tr> <td colspan='2' border='1'><div class='sectionhead'>Part 1: Clinic Information</div></td></tr>  
+ <tr>
+    <td><b>Referring Clinic:</b><br />{clinicBlock}</td>
+   <td class='subhead'>|||CONTACT INFO BLOCK Placeholder|||</td>
+  </tr>
+ <tr> <td colspan='2' border='1'><div class='sectionhead'>Part 2: Patient Demographic Information</div></td></tr> 
+ <tr>
+   <td class='tdnoborder'><b>{label_name}:</b> {pt_title} {pt_fname} {pt_mname} {pt_lname}</td>
+   <td class='tdnoborder'><b>SSN:</b> {pt_ss}</td>
+ </tr>
+ <tr>
+   <td class='tdnoborder'><b>{label_phone}:</b> {pt_phone_home}</td>
+   <td class='tdnoborder'><b>DOB:</b> {pt_DOB_TS}</td>
+ </tr>
+ <tr>
+   <td class='tdnoborder'><b>{label_address}:</b> {pt_street}</td>
+   <td class='tdnoborder'><b>{label_gender}:</b> {pt_sex}</td>
+  </tr> 
+  <tr>
+   <td class='tdnoborder'>{pt_city} {pt_state}, {pt_postal_code}</td>
+   <td class='tdnoborder'><b>Language:</b> {pt_language}</td>
+  </tr> 
+  <tr>
+   <td class='tdnoborder' colspan='2'>|||PLACEHOLDER Preferred Days/Times ec|||</td>
+  </tr> 
+ <tr> <td colspan='2' border='1'><div class='sectionhead'>Part 3: Clinical Information</div></td></tr> 
+  <tr>
+   <td class='tdnoborder'><b>{label_diagnosis}:</b> {ref_refer_diag}</td>
+   <td class='tdnoborder'><b>{label_dr_name}:</b> {ref_refer_from} </td>
+  </tr> 
+  <tr>
+   <td class='tdnoborder'>|||Specialty PLACEHOLDR|||</td>
+   <td class='tdnoborder'>Clinician Specialty????</td>
+  </tr> 
+    <tr>
+   <td class='tdnoborder'><b>{label_ref_class}:</b> {ref_refer_risk_level} </td>
+   <td class='tdnoborder'>|||Referral Date Placeholder|||</td>
+  </tr> 
+    </tr> 
+  <tr>
+   <td class='tdnoborder' colspan='2'><b>{label_ref_reason}:</b> {ref_body}</td>
+  </tr> 
+   <tr>
+   <td class='tdnoborder' colspan='2'><b>Current Medications:</b> {patient_meds}</td>
+  </tr> 
+  <tr>
+   <td class='tdnoborder' colspan='2'>|||Allergies Placeholder|||</td>
+  </tr> 
+  <tr> <td colspan='2' border='1'><div class='sectionhead'>Part 4: Documentation and Approvals</div></td></tr> 
+    </tr> 
+    <tr>
+   <td class='tdnoborder'>|||PlaceHolder for Documents provided||| </td>
+   <td class='tdnoborder'>|||Placeholder for clinician approval/eligibility approval, documentation review|||</td>
+  </tr> 
+    <tr> <td colspan='2' border='1'><div class='sectionhead'>Part 5: Referral Tracking</div></td></tr> 
+ <tr>
+   <td class='tdnoborder'>|||PlaceHolder Date Requested||| </td>
+   <td class='tdnoborder'>|||PlaceHolder Date Faxed to AccessNow|||</td>
+  </tr> 
+ <tr>
+   <td class='tdnoborder'>|||PlaceHolder Date Patient Notified|||</td>
+   <td class='tdnoborder'>|||PlaceHolder for First Date Patient Can Call|||</td>
+  </tr> 
+   <tr>
+   <td class='tdnoborder'>|||PlaceHolder Date Specialist Appt|||</td>
+   <td class='tdnoborder'>|||PlaceHolder Date Specialist Report Received|||</td>
+  </tr> 
+    
+    <tr> <td colspan='2' border='1'><div class='sectionhead'>Fax completed document to AccessNow at (877) 220-5608</div></td></tr>
+    </table>
+
+  
+</div></div>
+
+<!-- This should really be in the onload handler but that seems to be unreliable and can crash Firefox 3. -->
+<script type="text/javascript">
+ var win = top.printLogPrint ? top : opener.top;
+ win.printLogPrint(window);
+</script>
+
+</body>
+</html>
