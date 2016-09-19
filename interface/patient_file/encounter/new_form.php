@@ -9,10 +9,8 @@ require_once $GLOBALS['srcdir'].'/ESign/Api.php';
 
 $esignApi = new Esign\Api();
 ?>
-<?php if (empty($hide)) { // if not included by forms.php ?>
 <html>
 <head>
-<?php } ?>
 <?php html_header_show();?>
 <link rel="stylesheet" href="<?php echo $css_header; ?>" type="text/css">
 
@@ -139,6 +137,32 @@ function findPosX(id)
 <?php //DYNAMIC FORM RETREIVAL
 include_once("$srcdir/registry.inc");
 
+function myGetCombinedForms($state="1", $limit="unlimited", $offset="0") {
+ $sql = "SELECT category , nickname , name , directory , id , sql_run , " .
+ 	"unpackaged , date , priority , 'cust' as formType FROM registry " .
+ 	"WHERE state LIKE \"$state\"" .
+ 	"UNION " .
+ 	"SELECT notes as category , '' as Nickname , listOpt.title as Name , " .
+ 	"listOpt.option_id , '' as ID , '' as sqlRun , '' as Unpackaged , " .
+ 	"'' as Date , listOpt.seq as priority , 'lbf' as formType " .
+ 	"FROM list_options AS listOpt " .
+ 	"WHERE listOpt.list_id = 'lbfnames' ".
+ 	"ORDER BY category, priority,name" ; 
+  if ($limit != "unlimited") $sql .= " limit $limit, $offset";
+  $res = sqlStatement($sql);
+  if ($res) {
+    for($iter=0; $row=sqlFetchArray($res); $iter++) {
+      $all[$iter] = $row;
+    }
+  }
+  else {
+    return false;
+  }
+  return $all;
+	
+}
+
+
 function myGetRegistered($state="1", $limit="unlimited", $offset="0") {
   $sql = "SELECT category, nickname, name, state, directory, id, sql_run, " .
     "unpackaged, date FROM registry WHERE " .
@@ -156,7 +180,7 @@ function myGetRegistered($state="1", $limit="unlimited", $offset="0") {
   return $all;
 }
 
-$reg = myGetRegistered();
+$reg = myGetCombinedForms();
 $old_category = '';
 
   $DivId=1;
@@ -216,22 +240,22 @@ if($StringEcho){
 //$StringEcho='';
 // This shows Layout Based Form names just like the above.
 //
-if ( $encounterLocked === false ) {
-    $lres = sqlStatement("SELECT * FROM list_options " .
-      "WHERE list_id = 'lbfnames' ORDER BY seq, title");
-    if (sqlNumRows($lres)) {
-      if(!$StringEcho){
-        $StringEcho= '<ul id="sddm">';
-      }
-      $StringEcho.= "<li class=\"encounter-form-category-li\"><a href='JavaScript:void(0);' onClick=\"mopen('lbf');\" >".xl('Layout Based') ."</a><div id='lbf' ><table border='0'  cellspacing='0' cellpadding='0'>";
-      while ($lrow = sqlFetchArray($lres)) {
-      $option_id = $lrow['option_id']; // should start with LBF
-      $title = $lrow['title'];
-      $StringEcho.= "<tr><td style='border-top: 1px solid #000000;padding:0px;'><a href='" . $rootdir .'/patient_file/encounter/load_form.php?formname=' 
-    				.urlencode($option_id) ."' >" . xl_form_title($title) . "</a></td></tr>";
-      }
-    }
-}
+//if ( $encounterLocked === false ) {
+ //   $lres = sqlStatement("SELECT * FROM list_options " .
+//      "WHERE list_id = 'lbfnames' ORDER BY seq, title");
+//    if (sqlNumRows($lres)) {
+//      if(!$StringEcho){
+//        $StringEcho= '<ul id="sddm">';
+//      }
+ //     $StringEcho.= "<li class=\"encounter-form-category-li\"><a href='JavaScript:void(0);' onClick=\"mopen('lbf');\" >".xl('Layout Based') ."</a><div id='lbf' ><table border='0'  cellspacing='0' cellpadding='0'>";
+ //     while ($lrow = sqlFetchArray($lres)) {
+//      $option_id = $lrow['option_id']; // should start with LBF
+//      $title = $lrow['title'];
+//      $StringEcho.= "<tr><td style='border-top: 1px solid #000000;padding:0px;'><a href='" . $rootdir .'/patient_file/encounter/load_form.php?formname=' 
+//    				.urlencode($option_id) ."' >" . xl_form_title($title) . "</a></td></tr>";
+//      }
+ //   }
+//}
 ?>
 <!-- DISPLAYING HOOKS STARTS HERE -->
 <?php
@@ -280,7 +304,6 @@ if($StringEcho){
   </tr>
 </table>
 </dl>
-<?php if (empty($hide)) { ?>
+
 </body>
 </html>
-<?php } ?>

@@ -9,6 +9,7 @@
  */
 
 require_once("{$GLOBALS['srcdir']}/sql.inc");
+require_once(dirname(__FILE__) . "/classes/WSWrapper.class.php");
 require_once("{$GLOBALS['srcdir']}/formdata.inc.php");
 
 // These are for sports team use:
@@ -52,6 +53,9 @@ function getPatientData($pid, $given = "*, DATE_FORMAT(DOB,'%m/%d/%Y') as DOB_TS
     $sql = "select $given from patient_data where pid=? order by date DESC limit 0,1";
     return sqlQuery($sql, array($pid) );
 }
+
+
+
 
 function getLanguages() {
     $returnval = array('','english');
@@ -221,6 +225,30 @@ function genFacilityTitle($repname='', $facid=0) {
   return $s;
 }
 
+// Generate a report block including facility name, address and phone.
+//
+function genFacilityBlock($facid=0) {
+  $s = '';
+  $r = getFacility($facid);
+  if (!empty($r)) {
+    $s .= "<b>" . htmlspecialchars( $r['name'], ENT_NOQUOTES) . "</b>\n";
+    if ($r['street']) $s .= "<br />" . htmlspecialchars( $r['street'], ENT_NOQUOTES) . "\n";
+    if ($r['city'] || $r['state'] || $r['postal_code']) {
+      $s .= "<br />";
+      if ($r['city']) $s .= htmlspecialchars( $r['city'], ENT_NOQUOTES);
+      if ($r['state']) {
+        if ($r['city']) $s .= ", \n";
+        $s .= htmlspecialchars( $r['state'], ENT_NOQUOTES);
+      }
+      if ($r['postal_code']) $s .= " " . htmlspecialchars( $r['postal_code'], ENT_NOQUOTES);
+      $s .= "\n";
+    }
+    if ($r['country_code']) $s .= "<br />" . htmlspecialchars( $r['country_code'], ENT_NOQUOTES) . "\n";
+    if (preg_match('/[1-9]/', $r['phone'])) $s .= "<br />" . htmlspecialchars( $r['phone'], ENT_NOQUOTES) . "\n";
+  }
+  return $s;
+}
+
 /**
 GET FACILITIES
 
@@ -386,13 +414,19 @@ function getHistoryData($pid, $given = "*", $dateStart='',$dateEnd='')
     else {
         $res = sqlQuery("select $given from history_data where pid=? order by date DESC limit 0,1", array($pid) );
     }
-    
-    if($given == 'tobacco'){
-    	$res = sqlQuery("select $given from history_data where pid = ? and tobacco is not null and date >= ? and date <= ? order by date DESC limit 0,1", array($pid,$dateStart,$dateEnd));
-    }
 
     return $res;
 }
+
+function getMedList($pid)
+{
+   $sql = "select GROUP_CONCAT(title) as MedList from lists where pid=". $pid " and type='medication'";
+   $res - sqlStatement($sql);
+   return $res;
+
+
+}
+
 
 // function getInsuranceData($pid, $type = "primary", $given = "insd.*, DATE_FORMAT(subscriber_DOB,'%m/%d/%Y') as subscriber_DOB, ic.name as provider_name")
 function getInsuranceData($pid, $type = "primary", $given = "insd.*, ic.name as provider_name")
@@ -557,8 +591,7 @@ function getPatientNameSplit($term) {
             $n['last'] = end($names);
         }
     } else {
-        $n['last'] = $term;
-	if(empty($n['last'])) $n['last'] = '%';
+        $n['last'] = $term;       
     }
     // Trim whitespace off the names before returning
     foreach($n as $key => $val) {
@@ -919,6 +952,9 @@ function newPatientData(    $db_id="",
 
     $foo = sqlQuery("select pid from patient_data where id='$id' order by date limit 0,1");
 
+    sync_patient($id,$fname,$lname,$street,$city,$postal_code,$state,$phone_home,
+                $phone_biz,$phone_cell,$email,$pid);
+
     return $foo['pid'];
 }
 
@@ -1011,6 +1047,11 @@ function updatePatientData($pid, $new, $create=false)
     $sql .= " WHERE id = '$db_id'";
     sqlStatement($sql);
   }
+
+  $rez = sqlQuery("SELECT * FROM patient_data WHERE id = '$db_id'");
+  sync_patient($db_id,$rez['fname'],$rez['lname'],$rez['street'],$rez['city'],
+    $rez['postal_code'],$rez['state'],$rez['phone_home'],$rez['phone_biz'],
+    $rez['phone_cell'],$rez['email'],$rez['pid']);
 
   return $db_id;
 }
@@ -1267,6 +1308,68 @@ function updateHistoryData($pid,$new)
         $sql = substr($sql, 0, -2);
 
         return sqlInsert($sql, $arraySqlBind );
+}
+
+function sync_patient($id,$fname,$lname,$street,$city,$postal_code,$state,$phone_home,
+                $phone_biz,$phone_cell,$email,$pid="")
+{
+    if ($GLOBALS['oer_config']['ws_accounting']['enabled'] === 2) return;
+    if (!$GLOBALS['oer_config']['ws_accounting']['enabled']) return;
+
+    $db = $GLOBALS['adodb']['db'];
+    $customer_info = array();
+
+    $sql = "SELECT foreign_id,foreign_table FROM integration_mapping where local_table = 'patient_data' and local_id = '" . $id . "'";
+    $result = $db->Execute($sql);
+    if ($result && !$result->EOF) {
+        $customer_info['foreign_update'] = true;
+        $customer_info['foreign_id'] = $result->fields['foreign_id'];
+        $customer_info['foreign_table'] = $result->fields['foreign_table'];
+    }
+
+    ///xml rpc code to connect to accounting package and add user to it
+    $customer_info['firstname'] = $fname;
+    $customer_info['lastname'] = $lname;
+    $customer_info['address'] = $street;
+    $customer_info['suburb'] = $city;
+    $customer_info['state'] = $state;
+    $customer_info['postcode'] = $postal_code;
+
+    //ezybiz wants state as a code rather than abbreviation
+    $customer_info['geo_zone_id'] = "";
+    $sql = "SELECT zone_id from geo_zone_reference where zone_code = '" . strtoupper($state) . "'";
+    $db = $GLOBALS['adodb']['db'];
+    $result = $db->Execute($sql);
+    if ($result && !$result->EOF) {
+        $customer_info['geo_zone_id'] = $result->fields['zone_id'];
+    }
+
+    //ezybiz wants country as a code rather than abbreviation
+    $customer_info['geo_country_id'] = "";
+    $sql = "SELECT countries_id from geo_country_reference where countries_iso_code_2 = '" . strtoupper($country_code) . "'";
+    $db = $GLOBALS['adodb']['db'];
+    $result = $db->Execute($sql);
+    if ($result && !$result->EOF) {
+        $customer_info['geo_country_id'] = $result->fields['countries_id'];
+    }
+
+    $customer_info['phone1'] = $phone_home;
+    $customer_info['phone1comment'] = "Home Phone";
+    $customer_info['phone2'] = $phone_biz;
+    $customer_info['phone2comment'] = "Business Phone";
+    $customer_info['phone3'] = $phone_cell;
+    $customer_info['phone3comment'] = "Cell Phone";
+    $customer_info['email'] = $email;
+    $customer_info['customernumber'] = $pid;
+
+    $function['ezybiz.add_customer'] = array(new xmlrpcval($customer_info,"struct"));
+    $ws = new WSWrapper($function);
+
+    // if the remote patient was added make an entry in the local mapping table to that updates can be made correctly
+    if (is_numeric($ws->value)) {
+        $sql = "REPLACE INTO integration_mapping set id = '" . $db->GenID("sequences") . "', foreign_id ='" . $ws->value . "', foreign_table ='customer', local_id = '" . $id . "', local_table = 'patient_data' ";
+        $db->Execute($sql) or die ("error: " . $db->ErrorMsg());
+    }
 }
 
 // Returns Age 
@@ -1697,6 +1800,7 @@ function getEffectiveInsurances($patient_id, $encdate) {
  * @return number The balance.
  */
 function get_patient_balance($pid, $with_insurance=false) {
+  if ($GLOBALS['oer_config']['ws_accounting']['enabled'] === 2) {
     $balance = 0;
     $feres = sqlStatement("SELECT date, encounter, last_level_billed, " .
       "last_level_closed, stmt_count " .
@@ -1734,6 +1838,26 @@ function get_patient_balance($pid, $with_insurance=false) {
       }
     }
     return sprintf('%01.2f', $balance);
+  }
+  else if ($GLOBALS['oer_config']['ws_accounting']['enabled']) {
+    // require_once($GLOBALS['fileroot'] . "/library/classes/WSWrapper.class.php");
+    $conn = $GLOBALS['adodb']['db'];
+    $customer_info['id'] = 0;
+    $sql = "SELECT foreign_id FROM integration_mapping AS im " .
+      "LEFT JOIN patient_data AS pd ON im.local_id = pd.id WHERE " .
+      "pd.pid = '" . $pid . "' AND im.local_table = 'patient_data' AND " .
+      "im.foreign_table = 'customer'";
+    $result = $conn->Execute($sql);
+    if($result && !$result->EOF) {
+      $customer_info['id'] = $result->fields['foreign_id'];
+    }
+    $function['ezybiz.customer_balance'] = array(new xmlrpcval($customer_info,"struct"));
+    $ws = new WSWrapper($function);
+    if(is_numeric($ws->value)) {
+      return sprintf('%01.2f', $ws->value);
+    }
+  }
+  return '';
 }
 
 // Function to check if patient is deceased.

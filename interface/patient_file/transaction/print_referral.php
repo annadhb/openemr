@@ -19,23 +19,25 @@ require_once("$srcdir/transactions.inc");
 require_once("$srcdir/options.inc.php");
 include_once("$srcdir/patient.inc");
 
-$template_file = $GLOBALS['OE_SITE_DIR'] . "/referral_template.html";
+$template_file = $GLOBALS['OE_SITE_DIR'] . "/accessnow_referral_template.html";
 
 $TEMPLATE_LABELS = array(
   'label_clinic_id'             => htmlspecialchars( xl('Clinic ID')),
   'label_control_no'            => htmlspecialchars( xl('Control No.')),
   'label_date'                  => htmlspecialchars( xl('Date')),
-  'label_webpage_title'         => htmlspecialchars( xl('Referral Form')),
-  'label_form1_title'           => htmlspecialchars( xl('REFERRAL FORM')),
+  'label_clinic_block'			=> htmlspecialchars( xl('Referring Clinic')),
+  'label_webpage_title'         => htmlspecialchars( xl('Access Now Referral Request')),
+  'label_form1_title'           => htmlspecialchars( xl('Access Now Referral Request')),
   'label_name'                  => htmlspecialchars( xl('Name')),
   'label_age'                   => htmlspecialchars( xl('Age')),
   'label_gender'                => htmlspecialchars( xl('Gender')),
   'label_address'               => htmlspecialchars( xl('Address')),
   'label_postal'                => htmlspecialchars( xl('Postal')),
   'label_phone'                 => htmlspecialchars( xl('Phone')),
-  'label_ref_reason'            => htmlspecialchars( xl('Reference Reason')),
-  'label_diagnosis'             => htmlspecialchars( xl('Diagnosis')),
-  'label_ref_class'             => htmlspecialchars( xl('Reference classification (risk level)')),
+  'label_ref_reason'            => htmlspecialchars( xl('Pertinent history, physical, laboratory and radiologic findings')),
+  'label_diagnosis'             => htmlspecialchars( xl('Tentative Diagnosis')),
+  'label_ref_class'             => htmlspecialchars( xl('Priority')),
+  'label_dr_name'           	=> htmlspecialchars( xl('Referring Clinician')),
   'label_dr_name_sig'           => htmlspecialchars( xl('Doctor\'s name and signature')),
   'label_refer_to'              => htmlspecialchars( xl('Referred to')),
   'label_clinic'                => htmlspecialchars( xl('Health centre/clinic')),
@@ -82,6 +84,7 @@ else {
 if ($patient_id) {
   $patdata = getPatientData($patient_id);
   $patient_age = getPatientAge(str_replace('-', '', $patdata['DOB']));
+  $patient_meds = getMedList($patient_id);
 } else {
   $patdata = array('DOB' => '');
   $patient_age = '';
@@ -127,7 +130,11 @@ $fh = fopen($template_file, 'r');
 while (!feof($fh)) $s .= fread($fh, 8192);
 fclose($fh);
 
-$s = str_replace("{header1}", genFacilityTitle($TEMPLATE_LABELS['label_form1_title'], -1), $s);
+//$s = str_replace("{header1}", genFacilityTitle($TEMPLATE_LABELS['label_form1_title'], -1), $s);
+
+$s = str_replace("{clinicBlock}", genFacilityBlock(-1), $s);
+$s = str_replace("{header1}", $TEMPLATE_LABELS['label_form1_title'],$s);
+
 $s = str_replace("{header2}", genFacilityTitle($TEMPLATE_LABELS['label_form2_title'], -1), $s);
 
 $s = str_replace("{fac_name}"        , $facrow['name']        , $s);
